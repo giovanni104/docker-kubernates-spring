@@ -88,4 +88,9 @@ public class UsuarioController {
         });
         return ResponseEntity.badRequest().body(errores);
     }
+    
+    @GetMapping("/usuarios-por-curso")
+    public ResponseEntity<?> obtenerAlumnosPorCurso(@RequestParam List<Long> ids){
+        return ResponseEntity.ok(service.listarPorIds(ids));
+    }
 }
