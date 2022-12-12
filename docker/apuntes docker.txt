@@ -1,0 +1,178 @@
+docker run  -p 8001:8001 --name msvc-usuarios  deac1a09d27e
+docker images
+docker build -t usuarios .
+.\mvnw clean package -DskipTests
+
+------apuntes docker--------
+
+https://hub.docker.com/_/maven   docker pull maven:3.8.6-jdk-8-slim
+
+docker build -t usuarios . //crear imagen a partir de docker file, el punto a final significa que el docker file esta en la misma ubicacion
+
+docker ps //muestra solo los contenedores levantados
+
+docker ps -a muestra todos sin importar el estado
+
+docker start msvc-usuarios //arranca contenedor
+
+docker stop msvc-usuarios //detiene contenedor
+
+docker run -p 8081:8001 usuarios //arranca y crea un contenedor apartir de una imagen, esta intruccion deja el proceso atachada a la consola
+
+docker run -p 8081:8001 --name usuarios usuarios // el parametro --name le asigna un nombre al contenedor
+
+docker run -d -p 8081:8001 usuarios //arranca y crea un contenedor apartir de una imagen,deja la terminal liberada
+
+docker run -p 8081:8001 -d  --rm usuarios //lo ejecuta en background y se autoelimina cuando se detenga el contenedor
+
+docker run  -p 8081:8001 usuarios  --rm -it usuarios /bin/sh //mode interaccion solo permite si en el docker 
+                                                             //file no esta con entrypoint si no con cmd 
+															 
+docker  exec -it e1c32104e9e99f9ce39de14dab220a04f2d7b0e0807efbdb911d32e5a3aedf48 /bin/sh  //entra a la consola de un contenedor que esta en ejecucion
+
+docker logs msvc-usuarios //permite ver los logs de un contenedor que este corriendo
+
+docker logs -f msvc-usuarios //permite ver los logs de un contenedor que este corriendo y deja la consola atachada para ver en tiempo real
+
+docker rm msvc-usuarios // elimina un contenedor, debe estar detenido
+
+docker container prune // elimina todo los contenedores detenidos
+
+docker images//lista todas las imagenes
+
+docker rmi nombreimagen //borra la imagen
+
+docker image prune //elimina todas las imagenes que no se esten usando
+
+docker cp .\Login.java e1c32104e9e9:/app/Login.java //copiar archivo de mi pc al contenedor
+
+docker cp e1c32104e9e9:/app/Login.java  .\Login2.java //copiar del contenedor a mi pc
+
+docker cp fce25df07d80:/app/logs .\logs //copiar carpeta logs a mi pc 
+     //en el aplication properties se debe configurar logging.file.path=/app/logs
+	 //en el docker file se debe crear la carpeta en el contenedor RUN mkdir ./logs
+	 
+	 
+docker image inspect 08257859ae31 //inspeccionar caracteristicas de una imagen	 
+docker container inspect fce25df07d80  //inspeccionar caracteristicas de un contenedor	
+
+
+docker network create spring //crea una red en docker
+docker network ls //lista las redes
+
+docker run -p 8001:8001 -d --rm --name msvc-usuarios --network spring usuarios //permite crear un contenedor que pertenezca a una red 
+                                                                               //debe tener el mismo nombre de la aplicacion en el properties 				
+																			   //este contenedor se borra a detenerlo
+
+//dockerizando las bd
+
+//esta se creo con volumen -v nombreVolumen:Ruta de la carpeta en el contenedor
+ //si queremos que el volumen este en una carpeta conocida -v Ruta local:Ruta de la carpeta en el contenedor
+ // si se adiciona --restart=always   
+
+///mysql
+docker  pull mysql:8
+docker run -p 3307:3306 -d  --name mysql8 --network spring   -e MYSQL_ROOT_PASSWORD=sasa  -e MYSQL_DATABASE=msvc_usuarios mysql:8	//se crea sin volumen	
+
+docker run -p 3307:3306 -d  --name mysql8 --network spring   -e MYSQL_ROOT_PASSWORD=sasa  -e MYSQL_DATABASE=msvc_usuarios -v data-mysql:/var/lib/mysql mysql:8
+											           //esta se creo con volumen -v nombreVolumen:Ruta de la carpeta en el contenedor
+
+//postgres
+docker pull postgres:14-alpine
+docker  run -p 5532:5432 --name postgres14 --network spring -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=msvc_cursos -d postgres:14-alpine //sin volumen	
+docker  run -p 5532:5432 --name postgres14 --network spring -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=msvc_cursos -v data-postgres:/var/lib/postgresql/data -d postgres:14-alpine //con volumen		
+
+
+
+///docker compose
+
+docker-compose up -d  //crea todo lo configurado en el archivo compose, se ejecuta la sentencia en la ubicacion del archivo
+docker-compose down //borra todo lo creado menos los volumenes
+docker-compose down -v   //borra todo incluyendo los volumenes
+
+///subir imagenes al docker hub
+
+docker tag nombreImagenExistente nombreAsignadoRepositorio   //renombrar imagen
+docker tag usuarios giovanni104/usuarios//ejemplo de renombrado
+docker tag cursos giovanni104/cursos
+
+
+docker push nombreAsignadoRepositorio   ///descragar imagen del repositorio
+docker push giovanni104/usuarios
+docker push giovanni104/cursos
+
+docker login ///logear con cuenta de repositorio
+
+docker logout  ///deslogear
+
+
+-------------------kubernates----------------------------------------------
+https://kryptonsolid.com/como-escalar-automaticamente-los-pods-de-kubernetes-para-microservicios/
+
+---kubectl 									
+choco install kubernetes-cli // instalcion de kubectl 
+kubectl version --client	//verificar version instalada
+
+---minikube  //cluster kubernates--------worker node--------------------------------------
+minikube status  //ver estado del cluster
+minikube start --driver=docker
+
+---kubectl  es la herramienta de configuración de la línea de comandos de Kubernetes
+
+kubectl create deployment mysql8 --image=mysql:8 --port=3306 //crear deployment
+kubectl create deployment msvc-usuarios --image=giovanni104/usuarios:latest --port=8001
+
+
+kubectl get deployments  o  kubectl get deploy ///lista de despliegues
+kubectl get pods
+kubectl describe pods mysql8-5f67dff86b-fxdxj //descripcion del pods
+kubectl logs mysql8-5f67dff86b-fxdxj  ///logs de pod
+kubectl delete deployment mysql8 //borrar deployment
+
+kubectl create deployment mysql8 --image=mysql:8 --port=3306 --dry-run=client -o yaml > deployment-mysql.yaml //crea archivo yml deployment
+																											  //de esta forma permite agregar variables de entorno	
+
+kubectl apply -f .\deployment-mysql.yaml  ///ejecutamos archivo de configuracion para crear deployment
+
+kubectl expose deployment mysql8 --port=3306 --type=ClusterIP //se crea un servicio para exponer el deployment, el ClusterIP lo expone internamente
+kubectl expose deployment msvc-usuarios --port=8001 --type=LoadBalancer ////se crea un servicio para exponer el deployment,LoadBalancer expone interna y externamente
+
+
+
+kubectl get services  o  kubectl get svc /////visualizar los servicios
+
+kubectl describe services mysql8 //ver detalle de servicio creado
+
+kubectl get all // nos permite ver el escenario completo
+
+kubectl scale deployment msvc-usuarios --replicas=3
+
+
+
+
+
+--actualizacion de imagen para un pod
+
+se consulta la descripcion del pod con kubectl==> describe pod msvc-usuarios-7f74b44948-p7pls
+despues se saber el nombre de container se procede a actulizar la imagen 
+kubectl set image deployment msvc-usuarios usuarios=giovanni104/usuarios:v2
+
+
+---volumenes kubernates----------------------------------------------
+persisten volumen, creao en el cluster y no en el pod, queda desacoplado del pod
+
+kubectl get pv --consultar volumenes
+kubectl get pvc --consulta servicios que habilitan el volumen
+kubectl apply -f .\mysql-pvc.yaml
+kubectl apply -f .\mysql-pv.yaml
+
+
+
+--------minikube-------
+
+minikube service msvc-usuarios --url  ///me asigna una ip para conectarme al servicio por postman
+minikube dashboard
+
+--api kubernates-------k8s-------------------------------
+--permiso para obtener la lista completa y actualizada de direcciones
+kubectl create clusterrolebinding admin --clusterrole=cluster-admin --serviceaccount=default:default
