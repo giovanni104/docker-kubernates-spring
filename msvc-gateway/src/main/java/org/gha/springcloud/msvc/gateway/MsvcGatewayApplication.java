@@ -1,17 +1,16 @@
-package org.gha.springcloud.msvc.usuarios;
+package org.gha.springcloud.msvc.gateway;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
-import org.springframework.cloud.openfeign.EnableFeignClients;
+
 
 @EnableDiscoveryClient
-@EnableFeignClients
 @SpringBootApplication
-public class MsvcUsuariosApplication {
+public class MsvcGatewayApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(MsvcUsuariosApplication.class, args);
+		SpringApplication.run(MsvcGatewayApplication.class, args);
 	}
 
 }
